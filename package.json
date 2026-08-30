@@ -1,0 +1,15 @@
+{
+  "name": "soluciones-jorge",
+  "version": "1.0.0",
+  "description": "Sitio web de Soluciones Jorge - piezas y repuestos Geely en Cuba",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "set-admin-password": "node scripts/set-admin-password.js"
+  },
+  "dependencies": {}
+}

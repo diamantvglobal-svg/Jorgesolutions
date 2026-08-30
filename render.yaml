@@ -1,0 +1,41 @@
+# Configuración de Render para Soluciones Jorge
+# ---------------------------------------------------------------
+# IMPORTANTE — por qué existe este archivo:
+#
+# En el plan GRATUITO de Render el disco es temporal: cada vez que el
+# servicio se reinicia (y se reinicia solo, al dormirse por falta de
+# visitas o al publicar cambios), TODO lo que Jorge haya cargado desde
+# el panel se pierde: piezas nuevas, fotos subidas, citas y solicitudes
+# recibidas.
+#
+# Este archivo deja configurado un disco permanente para cuando se pase
+# al plan de pago (Starter). Con él, las carpetas data/ y uploads/
+# sobreviven a los reinicios y ya nada se borra.
+#
+# Mientras se siga en el plan gratuito, la sección "disk" no se aplica.
+#
+services:
+  - type: web
+    name: soluciones-jorge
+    runtime: node
+    plan: starter          # cámbialo a "free" si aún no vas a pagar
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /
+    envVars:
+      - key: SESSION_SECRET
+        generateValue: true          # Render crea una clave segura sola
+      - key: SITE_URL
+        value: https://solucionesjorge.com
+      - key: NODE_VERSION
+        value: "20"
+      # Estas dos hacen que los datos y las fotos se guarden en el disco
+      # permanente de abajo, en vez de en la carpeta temporal del servidor.
+      - key: DATA_DIR
+        value: /var/datos/data
+      - key: UPLOADS_DIR
+        value: /var/datos/uploads
+    disk:
+      name: datos-soluciones-jorge
+      mountPath: /var/datos
+      sizeGB: 1
