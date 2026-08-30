@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Secciones de publicaciones · Panel · Soluciones Jorge</title>
+<link rel="icon" href="/img/favicon-32.png">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="admin-shell">
+  <div class="admin-topbar">
+    <a href="/" class="brand"><img src="/img/logo.png" alt="Soluciones Jorge" style="height:34px"><span class="brand-text">Soluciones Jorge<small>Panel de Jorge</small></span></a>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="/" class="btn btn-outline btn-sm">Ver sitio</a>
+      <button class="btn btn-outline btn-sm" id="logout-btn">Cerrar sesión</button>
+    </div>
+  </div>
+  <nav class="admin-nav">
+    <a href="/admin/index.html">Piezas</a>
+    <a href="/admin/marcas.html">Marcas y modelos</a>
+    <a href="/admin/categorias.html">Categorías</a>
+    <a href="/admin/citas.html">Citas del taller</a>
+    <a href="/admin/solicitudes.html">Solicitudes de piezas</a>
+    <a href="/admin/testimonios.html">Testimonios</a>
+    <a href="/admin/blog.html">Blog</a>
+    <a href="/admin/publicaciones.html">Publicaciones</a>
+    <a href="/admin/secciones-publicaciones.html">Secciones de publicaciones</a>
+    <a href="/admin/cuenta.html">Mi cuenta</a>
+  </nav>
+
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Secciones de publicaciones</h1>
+      <a href="/api/admin/export/pub-sections" class="btn btn-outline btn-sm">⬇ Exportar</a>
+    </div>
+    <p style="color:var(--gray-600);font-size:14px;margin:-10px 0 24px">Son las categorías que usa el feed de Publicaciones (por ejemplo "Ofertas", "Nuevos ingresos"). Cada publicación se guarda dentro de una de estas secciones.</p>
+
+    <div class="form-error" id="page-error"></div>
+    <div class="form-card" style="max-width:100%;margin-bottom:24px">
+      <h2 style="font-size:16px">Agregar sección</h2>
+      <form id="section-form" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div class="field" style="margin:0;width:90px"><label for="s-icon">Ícono</label><input type="text" id="s-icon" placeholder="📌" maxlength="4"></div>
+        <div class="field" style="margin:0;flex:1;min-width:180px"><label for="s-name">Nombre *</label><input type="text" id="s-name" required placeholder="Ej. Promociones de fin de mes"></div>
+        <button type="submit" class="btn btn-primary">+ Agregar</button>
+      </form>
+    </div>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr><th></th><th>Sección</th><th></th></tr></thead>
+        <tbody id="sec-tbody"><tr><td colspan="3" style="text-align:center;padding:30px;color:#79808c">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="/js/admin-common.js"></script>
+<script>
+(async () => {
+  const esc = SJAdmin.escapeHtml;
+  const ok = await SJAdmin.requireSession();
+  if (!ok) return;
+
+  function showError(msg) {
+    const box = document.getElementById('page-error');
+    box.textContent = msg; box.classList.add('show');
+    setTimeout(() => box.classList.remove('show'), 5000);
+  }
+
+  async function load() {
+    const res = await fetch('/api/admin/pub-sections');
+    const sections = await res.json();
+    const tbody = document.getElementById('sec-tbody');
+    tbody.innerHTML = sections.map(s => `
+      <tr>
+        <td style="font-size:20px">${s.icon}</td>
+        <td><strong>${esc(s.name)}</strong><div style="font-size:11px;color:#79808c">${esc(s.slug)}</div></td>
+        <td><button class="btn btn-outline btn-sm" data-slug="${s.slug}">Eliminar</button></td>
+      </tr>`).join('');
+    tbody.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => remove(btn.dataset.slug)));
+  }
+
+  async function remove(slug) {
+    if (!confirm('¿Eliminar esta sección?')) return;
+    const res = await fetch('/api/admin/pub-sections/' + slug, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) return showError(data.error);
+    load();
+  }
+
+  document.getElementById('section-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('s-name').value.trim();
+    const icon = document.getElementById('s-icon').value.trim();
+    const res = await fetch('/api/admin/pub-sections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
+    const data = await res.json();
+    if (!res.ok) return showError(data.error);
+    document.getElementById('section-form').reset();
+    load();
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

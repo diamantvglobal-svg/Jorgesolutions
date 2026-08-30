@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blog · Panel · Soluciones Jorge</title>
+<link rel="icon" href="/img/favicon-32.png">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="admin-shell">
+  <div class="admin-topbar">
+    <a href="/" class="brand"><img src="/img/logo.png" alt="Soluciones Jorge" style="height:34px"><span class="brand-text">Soluciones Jorge<small>Panel de Jorge</small></span></a>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="/" class="btn btn-outline btn-sm">Ver sitio</a>
+      <button class="btn btn-outline btn-sm" id="logout-btn">Cerrar sesión</button>
+    </div>
+  </div>
+  <nav class="admin-nav">
+    <a href="/admin/index.html">Piezas</a>
+    <a href="/admin/marcas.html">Marcas y modelos</a>
+    <a href="/admin/categorias.html">Categorías</a>
+    <a href="/admin/citas.html">Citas del taller</a>
+    <a href="/admin/solicitudes.html">Solicitudes de piezas</a>
+    <a href="/admin/testimonios.html">Testimonios</a>
+    <a href="/admin/blog.html">Blog</a>
+    <a href="/admin/publicaciones.html">Publicaciones</a>
+    <a href="/admin/secciones-publicaciones.html">Secciones de publicaciones</a>
+    <a href="/admin/cuenta.html">Mi cuenta</a>
+  </nav>
+
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Artículos del blog</h1>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="/api/admin/export/posts" class="btn btn-outline btn-sm">⬇ Exportar</a>
+        <button class="btn btn-primary" id="open-add-btn">+ Nuevo artículo</button>
+      </div>
+    </div>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr><th></th><th>Título</th><th>Fecha</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="tbody"><tr><td colspan="5" style="text-align:center;padding:30px;color:#79808c">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="admin-drawer-overlay" id="drawer-overlay">
+  <div class="admin-drawer" style="width:min(560px,100%)">
+    <h2 id="drawer-title">Nuevo artículo</h2>
+    <div class="form-error" id="form-error"></div>
+    <form id="post-form">
+      <input type="hidden" id="p-id">
+      <div class="image-preview" id="image-preview"><span style="color:#c3c9d1;font-size:13px">Sin imagen</span></div>
+      <div class="field"><label for="p-image">Imagen destacada</label><input type="file" id="p-image" accept="image/*"></div>
+      <div class="field"><label for="p-title">Título *</label><input type="text" id="p-title" required></div>
+      <div class="field"><label for="p-excerpt">Resumen corto (para la tarjeta del blog)</label><input type="text" id="p-excerpt" maxlength="300"></div>
+      <div class="field"><label for="p-meta">Meta descripción SEO (para Google, máx. 160 caracteres)</label><input type="text" id="p-meta" maxlength="160"></div>
+      <div class="field"><label for="p-content">Contenido *</label><textarea id="p-content" required style="min-height:220px" placeholder="Separa los párrafos dejando una línea en blanco entre ellos."></textarea></div>
+      <div class="checkbox-row"><input type="checkbox" id="p-published" checked><label for="p-published" style="margin:0">Publicado</label></div>
+      <div style="display:flex;gap:10px">
+        <button type="button" class="btn btn-outline btn-block" id="drawer-cancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary btn-block">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/admin-common.js"></script>
+<script>
+(async () => {
+  const esc = SJAdmin.escapeHtml;
+  const ok = await SJAdmin.requireSession();
+  if (!ok) return;
+
+  let editingId = null;
+
+  async function load() {
+    const res = await fetch('/api/admin/posts');
+    const list = await res.json();
+    list.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const tbody = document.getElementById('tbody');
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:#79808c">Todavía no hay artículos.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(p => `
+      <tr>
+        <td>${p.image ? `<img class="admin-thumb" src="${p.image}" alt="">` : `<div class="admin-thumb"></div>`}</td>
+        <td><strong>${esc(p.title)}</strong><div style="font-size:11px;color:#79808c"><a href="/blog/${esc(p.slug)}" target="_blank">/blog/${esc(p.slug)}</a></div></td>
+        <td>${new Date(p.createdAt).toLocaleDateString('es-ES')}</td>
+        <td>${p.published !== false ? '<span class="badge badge-on">Publicado</span>' : '<span class="badge badge-off">Borrador</span>'}</td>
+        <td>
+          <div class="row-actions">
+            <button data-action="edit" data-id="${p.id}">✎</button>
+            <button data-action="delete" data-id="${p.id}">🗑</button>
+          </div>
+        </td>
+      </tr>`).join('');
+    tbody.querySelectorAll('[data-action="edit"]').forEach(btn => btn.addEventListener('click', () => openDrawer(list.find(p => p.id === btn.dataset.id))));
+    tbody.querySelectorAll('[data-action="delete"]').forEach(btn => btn.addEventListener('click', () => remove(btn.dataset.id)));
+  }
+
+  function openDrawer(p) {
+    document.getElementById('form-error').classList.remove('show');
+    document.getElementById('post-form').reset();
+    document.getElementById('image-preview').innerHTML = '<span style="color:#c3c9d1;font-size:13px">Sin imagen</span>';
+    editingId = p ? p.id : null;
+    document.getElementById('drawer-title').textContent = p ? 'Editar artículo' : 'Nuevo artículo';
+    if (p) {
+      document.getElementById('p-title').value = p.title || '';
+      document.getElementById('p-excerpt').value = p.excerpt || '';
+      document.getElementById('p-meta').value = p.metaDescription || '';
+      document.getElementById('p-content').value = p.content || '';
+      document.getElementById('p-published').checked = p.published !== false;
+      if (p.image) document.getElementById('image-preview').innerHTML = `<img src="${p.image}" alt="">`;
+    } else {
+      document.getElementById('p-published').checked = true;
+    }
+    document.getElementById('drawer-overlay').classList.add('open');
+  }
+
+  async function remove(id) {
+    if (!confirm('¿Eliminar este artículo?')) return;
+    await fetch('/api/admin/posts/' + id, { method: 'DELETE' });
+    load();
+  }
+
+  document.getElementById('open-add-btn').addEventListener('click', () => openDrawer(null));
+  document.getElementById('drawer-cancel').addEventListener('click', () => document.getElementById('drawer-overlay').classList.remove('open'));
+  document.getElementById('drawer-overlay').addEventListener('click', (e) => { if (e.target.id === 'drawer-overlay') e.currentTarget.classList.remove('open'); });
+  document.getElementById('p-image').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { document.getElementById('image-preview').innerHTML = `<img src="${reader.result}" alt="">`; };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('post-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.set('title', document.getElementById('p-title').value.trim());
+    fd.set('excerpt', document.getElementById('p-excerpt').value.trim());
+    fd.set('metaDescription', document.getElementById('p-meta').value.trim());
+    fd.set('content', document.getElementById('p-content').value.trim());
+    fd.set('published', document.getElementById('p-published').checked ? 'true' : 'false');
+    const file = document.getElementById('p-image').files[0];
+    if (file) fd.set('image', file);
+
+    const url = editingId ? '/api/admin/posts/' + editingId : '/api/admin/posts';
+    const method = editingId ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, body: fd });
+    const data = await res.json();
+    const errBox = document.getElementById('form-error');
+    if (!res.ok) { errBox.textContent = data.error; errBox.classList.add('show'); return; }
+    errBox.classList.remove('show');
+    document.getElementById('drawer-overlay').classList.remove('open');
+    load();
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

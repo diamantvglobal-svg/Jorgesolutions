@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marcas y modelos · Panel · Soluciones Jorge</title>
+<link rel="icon" href="/img/favicon-32.png">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="admin-shell">
+  <div class="admin-topbar">
+    <a href="/" class="brand"><img src="/img/logo.png" alt="Soluciones Jorge" style="height:34px"><span class="brand-text">Soluciones Jorge<small>Panel de Jorge</small></span></a>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="/" class="btn btn-outline btn-sm">Ver sitio</a>
+      <button class="btn btn-outline btn-sm" id="logout-btn">Cerrar sesión</button>
+    </div>
+  </div>
+  <nav class="admin-nav">
+    <a href="/admin/index.html">Piezas</a>
+    <a href="/admin/marcas.html">Marcas y modelos</a>
+    <a href="/admin/categorias.html">Categorías</a>
+    <a href="/admin/citas.html">Citas del taller</a>
+    <a href="/admin/solicitudes.html">Solicitudes de piezas</a>
+    <a href="/admin/testimonios.html">Testimonios</a>
+    <a href="/admin/blog.html">Blog</a>
+    <a href="/admin/publicaciones.html">Publicaciones</a>
+    <a href="/admin/secciones-publicaciones.html">Secciones de publicaciones</a>
+    <a href="/admin/cuenta.html">Mi cuenta</a>
+  </nav>
+
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Marcas y modelos</h1>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="/api/admin/export/brands" class="btn btn-outline btn-sm">⬇ Exportar</a>
+        <button class="btn btn-primary" id="open-add-brand">+ Agregar marca</button>
+      </div>
+    </div>
+    <p style="color:var(--gray-600);font-size:14px;margin:-10px 0 24px">Prepara marcas y modelos aunque todavía no tengas piezas publicadas — así queda todo listo para cuando amplíes el catálogo.</p>
+
+    <div class="form-error" id="page-error"></div>
+    <div id="brands-list" style="display:flex;flex-direction:column;gap:16px"></div>
+  </main>
+</div>
+
+<div class="admin-drawer-overlay" id="drawer-overlay">
+  <div class="admin-drawer" style="width:min(420px,100%)">
+    <h2>Agregar marca</h2>
+    <div class="form-error" id="form-error"></div>
+    <form id="brand-form">
+      <div class="field"><label for="b-name">Nombre de la marca *</label><input type="text" id="b-name" required placeholder="Ej. Nissan"></div>
+      <div style="display:flex;gap:10px">
+        <button type="button" class="btn btn-outline btn-block" id="drawer-cancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary btn-block">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/admin-common.js"></script>
+<script>
+(async () => {
+  const esc = SJAdmin.escapeHtml;
+  const ok = await SJAdmin.requireSession();
+  if (!ok) return;
+
+  let brands = [];
+
+  async function load() {
+    const res = await fetch('/api/admin/brands');
+    brands = await res.json();
+    render();
+  }
+
+  function render() {
+    const wrap = document.getElementById('brands-list');
+    wrap.innerHTML = brands.map(b => `
+      <div class="admin-table-wrap" style="padding:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="margin:0;color:var(--navy-900);font-size:17px">${esc(b.name)}</h3>
+          <button class="btn btn-outline btn-sm" data-action="delete-brand" data-slug="${b.slug}">Eliminar marca</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          ${b.models.map(m => `<span class="chip" style="display:inline-flex;align-items:center;gap:8px">${esc(m.name)} <button data-action="delete-model" data-brand="${b.slug}" data-model="${m.slug}" style="background:none;border:none;color:var(--red-600);font-weight:800;cursor:pointer">×</button></span>`).join('') || '<span style="color:#79808c;font-size:13px">Sin modelos todavía</span>'}
+        </div>
+        <form data-action="add-model" data-brand="${b.slug}" style="display:flex;gap:8px">
+          <input type="text" placeholder="Nuevo modelo (ej. Sportage)" style="flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--gray-200)">
+          <button type="submit" class="btn btn-navy btn-sm">+ Agregar modelo</button>
+        </form>
+      </div>`).join('');
+
+    wrap.querySelectorAll('[data-action="delete-brand"]').forEach(btn => btn.addEventListener('click', () => deleteBrand(btn.dataset.slug)));
+    wrap.querySelectorAll('[data-action="delete-model"]').forEach(btn => btn.addEventListener('click', () => deleteModel(btn.dataset.brand, btn.dataset.model)));
+    wrap.querySelectorAll('[data-action="add-model"]').forEach(form => form.addEventListener('submit', addModel));
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('page-error');
+    box.textContent = msg; box.classList.add('show');
+    setTimeout(() => box.classList.remove('show'), 5000);
+  }
+
+  async function deleteBrand(slug) {
+    if (!confirm('¿Eliminar esta marca y todos sus modelos?')) return;
+    const res = await fetch('/api/admin/brands/' + slug, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) return showError(data.error);
+    load();
+  }
+  async function deleteModel(brandSlug, modelSlug) {
+    if (!confirm('¿Eliminar este modelo?')) return;
+    const res = await fetch(`/api/admin/brands/${brandSlug}/models/${modelSlug}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) return showError(data.error);
+    load();
+  }
+  async function addModel(e) {
+    e.preventDefault();
+    const input = e.target.querySelector('input');
+    const name = input.value.trim();
+    if (!name) return;
+    const res = await fetch(`/api/admin/brands/${e.target.dataset.brand}/models`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name })
+    });
+    const data = await res.json();
+    if (!res.ok) return showError(data.error);
+    load();
+  }
+
+  document.getElementById('open-add-brand').addEventListener('click', () => document.getElementById('drawer-overlay').classList.add('open'));
+  document.getElementById('drawer-cancel').addEventListener('click', () => document.getElementById('drawer-overlay').classList.remove('open'));
+  document.getElementById('drawer-overlay').addEventListener('click', (e) => { if (e.target.id === 'drawer-overlay') e.currentTarget.classList.remove('open'); });
+  document.getElementById('brand-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('b-name').value.trim();
+    const res = await fetch('/api/admin/brands', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    const data = await res.json();
+    const errBox = document.getElementById('form-error');
+    if (!res.ok) { errBox.textContent = data.error; errBox.classList.add('show'); return; }
+    errBox.classList.remove('show');
+    document.getElementById('brand-form').reset();
+    document.getElementById('drawer-overlay').classList.remove('open');
+    load();
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

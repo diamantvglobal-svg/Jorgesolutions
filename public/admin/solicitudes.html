@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solicitudes de piezas · Panel · Soluciones Jorge</title>
+<link rel="icon" href="/img/favicon-32.png">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="admin-shell">
+  <div class="admin-topbar">
+    <a href="/" class="brand"><img src="/img/logo.png" alt="Soluciones Jorge" style="height:34px"><span class="brand-text">Soluciones Jorge<small>Panel de Jorge</small></span></a>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="/" class="btn btn-outline btn-sm">Ver sitio</a>
+      <button class="btn btn-outline btn-sm" id="logout-btn">Cerrar sesión</button>
+    </div>
+  </div>
+  <nav class="admin-nav">
+    <a href="/admin/index.html">Piezas</a>
+    <a href="/admin/marcas.html">Marcas y modelos</a>
+    <a href="/admin/categorias.html">Categorías</a>
+    <a href="/admin/citas.html">Citas del taller</a>
+    <a href="/admin/solicitudes.html">Solicitudes de piezas</a>
+    <a href="/admin/testimonios.html">Testimonios</a>
+    <a href="/admin/blog.html">Blog</a>
+    <a href="/admin/publicaciones.html">Publicaciones</a>
+    <a href="/admin/secciones-publicaciones.html">Secciones de publicaciones</a>
+    <a href="/admin/cuenta.html">Mi cuenta</a>
+  </nav>
+
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Solicitudes de piezas</h1>
+      <a href="/api/admin/export/part-requests" class="btn btn-outline btn-sm">⬇ Exportar</a>
+    </div>
+    <p style="color:var(--gray-600);font-size:14px;margin:-10px 0 24px">Pedidos de piezas que los clientes no encontraron en el catálogo.</p>
+
+    <div id="cards" style="display:flex;flex-direction:column;gap:14px"></div>
+  </main>
+</div>
+
+<script src="/js/admin-common.js"></script>
+<script>
+(async () => {
+  const esc = SJAdmin.escapeHtml;
+  const ok = await SJAdmin.requireSession();
+  if (!ok) return;
+
+  const STATUSES = ['pendiente', 'contactado', 'resuelto'];
+
+  async function load() {
+    const res = await fetch('/api/admin/part-requests');
+    const list = await res.json();
+    const wrap = document.getElementById('cards');
+    if (!list.length) {
+      wrap.innerHTML = '<p style="color:#79808c;text-align:center;padding:30px">Todavía no hay solicitudes.</p>';
+      return;
+    }
+    wrap.innerHTML = list.map(r => `
+      <div class="admin-table-wrap" style="padding:18px 20px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+        <div class="thumb-pair">
+          ${r.partPhoto ? `<img src="${r.partPhoto}" alt="pieza">` : ''}
+          ${r.vehiclePhoto ? `<img src="${r.vehiclePhoto}" alt="vehículo">` : ''}
+        </div>
+        <div style="flex:1;min-width:220px">
+          <strong style="color:var(--navy-900)">${esc(r.partName)}</strong>
+          <div style="font-size:12.5px;color:#79808c;margin:4px 0">${esc(r.brand)} ${esc(r.model)} ${esc(r.year)} — ${esc(r.name)} · ${esc(r.phone)}</div>
+          ${r.comment ? `<p style="font-size:13.5px;color:var(--gray-700);margin:6px 0 0">${esc(r.comment)}</p>` : ''}
+          <div style="font-size:11px;color:#c3c9d1;margin-top:6px">${new Date(r.createdAt).toLocaleString('es-ES')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+          <select class="status-select badge-${r.status || 'pendiente'}" data-id="${r.id}">
+            ${STATUSES.map(s => `<option value="${s}" ${r.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+          <div class="row-actions">
+            <a href="https://wa.me/${esc((r.phone||'').replace(/\D/g,''))}" target="_blank" title="WhatsApp"><button type="button">💬</button></a>
+            <button data-action="delete" data-id="${r.id}" title="Eliminar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V4h6v3m-9 0l1 13h10l1-13" stroke="#e60012" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+      </div>`).join('');
+
+    wrap.querySelectorAll('.status-select').forEach(sel => sel.addEventListener('change', async () => {
+      await fetch('/api/admin/part-requests/' + sel.dataset.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: sel.value }) });
+      load();
+    }));
+    wrap.querySelectorAll('[data-action="delete"]').forEach(btn => btn.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar esta solicitud?')) return;
+      await fetch('/api/admin/part-requests/' + btn.dataset.id, { method: 'DELETE' });
+      load();
+    }));
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>

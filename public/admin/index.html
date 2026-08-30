@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piezas · Panel · Soluciones Jorge</title>
+<link rel="icon" href="/img/favicon-32.png">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="admin-shell">
+  <div class="admin-topbar">
+    <a href="/" class="brand">
+      <img src="/img/logo.png" alt="Soluciones Jorge" style="height:34px">
+      <span class="brand-text">Soluciones Jorge<small>Panel de Jorge</small></span>
+    </a>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="/" class="btn btn-outline btn-sm">Ver sitio</a>
+      <button class="btn btn-outline btn-sm" id="logout-btn">Cerrar sesión</button>
+    </div>
+  </div>
+  <nav class="admin-nav">
+    <a href="/admin/index.html">Piezas</a>
+    <a href="/admin/marcas.html">Marcas y modelos</a>
+    <a href="/admin/categorias.html">Categorías</a>
+    <a href="/admin/citas.html">Citas del taller</a>
+    <a href="/admin/solicitudes.html">Solicitudes de piezas</a>
+    <a href="/admin/testimonios.html">Testimonios</a>
+    <a href="/admin/blog.html">Blog</a>
+    <a href="/admin/publicaciones.html">Publicaciones</a>
+    <a href="/admin/secciones-publicaciones.html">Secciones de publicaciones</a>
+    <a href="/admin/cuenta.html">Mi cuenta</a>
+  </nav>
+
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Piezas del catálogo</h1>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="/api/admin/export/all" class="btn btn-outline btn-sm" title="Descarga TODO el contenido del sitio en un solo archivo. Guárdalo cada cierto tiempo.">⬇ Respaldo completo</a>
+        <a href="/api/admin/export/products" class="btn btn-outline btn-sm">⬇ Solo piezas</a>
+        <button class="btn btn-primary" id="open-add-btn">+ Agregar pieza</button>
+      </div>
+    </div>
+
+    <div class="stat-row" id="stat-row"></div>
+
+    <div class="catalog-toolbar" style="position:static;background:#fff;border-radius:18px;border:1px solid rgba(4,20,46,0.06);margin-bottom:20px">
+      <div class="catalog-toolbar-inner" style="flex-wrap:wrap;gap:10px">
+        <select class="filter-select" id="admin-brand-filter"><option value="">Todas las marcas</option></select>
+        <select class="filter-select" id="admin-category-filter"><option value="">Todas las categorías</option></select>
+        <div class="search-inline" style="flex:1;min-width:200px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;color:#79808c"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input type="search" id="admin-search" placeholder="Buscar...">
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr><th></th><th>Nombre</th><th>Vehículo</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody id="admin-tbody">
+          <tr><td colspan="8" style="text-align:center;padding:40px;color:#79808c">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="admin-drawer-overlay" id="drawer-overlay">
+  <div class="admin-drawer">
+    <h2 id="drawer-title">Agregar pieza</h2>
+    <div class="form-error" id="form-error"></div>
+    <form id="product-form">
+      <input type="hidden" id="product-id">
+
+      <div class="image-preview" id="image-preview"><span style="color:#c3c9d1;font-size:13px">Sin imagen</span></div>
+      <div class="field"><label for="image-file">Subir foto de la pieza</label><input type="file" id="image-file" accept="image/*"></div>
+      <div class="field"><label for="image-url">...o pega una URL de imagen (opcional)</label><input type="url" id="image-url" placeholder="https://..."></div>
+
+      <div class="field"><label for="p-name">Nombre de la pieza *</label><input type="text" id="p-name" required placeholder="Ej. Filtro de aceite"></div>
+
+      <div class="field"><label for="p-brand">Marca *</label><select id="p-brand" required></select></div>
+      <div class="field"><label for="p-model">Modelo</label><select id="p-model"><option value="">Todos los modelos de la marca</option></select></div>
+      <div class="field"><label for="p-category">Categoría *</label><select id="p-category" required></select></div>
+
+      <div class="field"><label for="p-sku">Código / SKU</label><input type="text" id="p-sku" placeholder="Opcional"></div>
+      <div class="field"><label for="p-price">Precio (USD)</label><input type="number" id="p-price" min="0" step="0.01" placeholder="Déjalo vacío si es 'a consultar'"></div>
+      <div class="field"><label for="p-stock">Cantidad en stock (opcional)</label><input type="number" id="p-stock" min="0" step="1" placeholder="Ej. 5 — déjalo vacío si no llevas conteo exacto"></div>
+      <div class="field"><label for="p-desc">Descripción</label><textarea id="p-desc" placeholder="Detalles, compatibilidad, condición, etc."></textarea></div>
+
+      <div class="checkbox-row"><input type="checkbox" id="p-instock" checked><label for="p-instock" style="margin:0">Disponible en stock</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="p-available" checked><label for="p-available" style="margin:0">Visible en el catálogo público</label></div>
+      <p style="font-size:12px;color:var(--gray-500);margin:-10px 0 16px">Si indicas una cantidad, esta manda sobre la casilla "Disponible en stock": en 0 unidades se marca agotado automáticamente. Si la dejas vacía, la casilla de arriba controla la disponibilidad a mano.</p>
+
+      <div style="display:flex;gap:10px">
+        <button type="button" class="btn btn-outline btn-block" id="drawer-cancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary btn-block" id="save-btn">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/admin-common.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>

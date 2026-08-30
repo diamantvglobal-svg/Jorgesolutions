@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Citas del taller · Panel · Soluciones Jorge</title>
+<link rel="icon" href="/img/favicon-32.png">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="admin-shell">
+  <div class="admin-topbar">
+    <a href="/" class="brand"><img src="/img/logo.png" alt="Soluciones Jorge" style="height:34px"><span class="brand-text">Soluciones Jorge<small>Panel de Jorge</small></span></a>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="/" class="btn btn-outline btn-sm">Ver sitio</a>
+      <button class="btn btn-outline btn-sm" id="logout-btn">Cerrar sesión</button>
+    </div>
+  </div>
+  <nav class="admin-nav">
+    <a href="/admin/index.html">Piezas</a>
+    <a href="/admin/marcas.html">Marcas y modelos</a>
+    <a href="/admin/categorias.html">Categorías</a>
+    <a href="/admin/citas.html">Citas del taller</a>
+    <a href="/admin/solicitudes.html">Solicitudes de piezas</a>
+    <a href="/admin/testimonios.html">Testimonios</a>
+    <a href="/admin/blog.html">Blog</a>
+    <a href="/admin/publicaciones.html">Publicaciones</a>
+    <a href="/admin/secciones-publicaciones.html">Secciones de publicaciones</a>
+    <a href="/admin/cuenta.html">Mi cuenta</a>
+  </nav>
+
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Citas del taller</h1>
+      <a href="/api/admin/export/appointments" class="btn btn-outline btn-sm">⬇ Exportar</a>
+    </div>
+    <p style="color:var(--gray-600);font-size:14px;margin:-10px 0 24px">Solicitudes enviadas desde el formulario de "Solicitar cita" en la página del taller.</p>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>Fecha</th><th>Cliente</th><th>Vehículo</th><th>Problema</th><th>Día pedido</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="tbody"><tr><td colspan="7" style="text-align:center;padding:30px;color:#79808c">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="/js/admin-common.js"></script>
+<script>
+(async () => {
+  const esc = SJAdmin.escapeHtml;
+  const ok = await SJAdmin.requireSession();
+  if (!ok) return;
+
+  const STATUSES = ['pendiente', 'contactado', 'completado'];
+
+  async function load() {
+    const res = await fetch('/api/admin/appointments');
+    const list = await res.json();
+    const tbody = document.getElementById('tbody');
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#79808c">Todavía no hay citas solicitadas.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(a => `
+      <tr>
+        <td style="white-space:nowrap">${new Date(a.createdAt).toLocaleDateString('es-ES')}</td>
+        <td><strong>${esc(a.name)}</strong><div style="font-size:11.5px;color:#79808c">${esc(a.phone)}</div></td>
+        <td>${esc(a.brand)} ${esc(a.model)}</td>
+        <td style="max-width:260px">${esc(a.problem)}</td>
+        <td>${esc(a.day) || '—'}</td>
+        <td>
+          <select class="status-select badge-${a.status || 'pendiente'}" data-id="${a.id}">
+            ${STATUSES.map(s => `<option value="${s}" ${a.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </td>
+        <td>
+          <div class="row-actions">
+            <a href="https://wa.me/${esc((a.phone||'').replace(/\D/g,''))}" target="_blank" title="WhatsApp"><button type="button">💬</button></a>
+            <button data-action="delete" data-id="${a.id}" title="Eliminar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V4h6v3m-9 0l1 13h10l1-13" stroke="#e60012" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </td>
+      </tr>`).join('');
+
+    tbody.querySelectorAll('.status-select').forEach(sel => sel.addEventListener('change', async () => {
+      await fetch('/api/admin/appointments/' + sel.dataset.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: sel.value }) });
+      load();
+    }));
+    tbody.querySelectorAll('[data-action="delete"]').forEach(btn => btn.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar esta cita?')) return;
+      await fetch('/api/admin/appointments/' + btn.dataset.id, { method: 'DELETE' });
+      load();
+    }));
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>
