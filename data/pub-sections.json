@@ -1,0 +1,27 @@
+[
+  {
+    "slug": "ofertas",
+    "name": "Ofertas y promociones",
+    "icon": "🔥"
+  },
+  {
+    "slug": "nuevos-ingresos",
+    "name": "Nuevos ingresos",
+    "icon": "📦"
+  },
+  {
+    "slug": "noticias-taller",
+    "name": "Noticias del taller",
+    "icon": "🔧"
+  },
+  {
+    "slug": "consejos",
+    "name": "Consejos y mantenimiento",
+    "icon": "💡"
+  },
+  {
+    "slug": "avisos",
+    "name": "Avisos y anuncios",
+    "icon": "📢"
+  }
+]

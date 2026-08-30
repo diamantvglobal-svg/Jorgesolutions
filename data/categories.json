@@ -1,0 +1,62 @@
+[
+  {
+    "slug": "motor",
+    "name": "Motor",
+    "icon": "⚙️"
+  },
+  {
+    "slug": "suspension",
+    "name": "Suspensión",
+    "icon": "🎯"
+  },
+  {
+    "slug": "frenos",
+    "name": "Frenos",
+    "icon": "🛑"
+  },
+  {
+    "slug": "direccion",
+    "name": "Dirección",
+    "icon": "🎡"
+  },
+  {
+    "slug": "embrague",
+    "name": "Embrague",
+    "icon": "🔩"
+  },
+  {
+    "slug": "electrico",
+    "name": "Sistema eléctrico",
+    "icon": "⚡"
+  },
+  {
+    "slug": "enfriamiento",
+    "name": "Enfriamiento",
+    "icon": "❄️"
+  },
+  {
+    "slug": "distribucion",
+    "name": "Distribución",
+    "icon": "⏱️"
+  },
+  {
+    "slug": "filtros",
+    "name": "Filtros",
+    "icon": "🛢️"
+  },
+  {
+    "slug": "rodamientos",
+    "name": "Rodamientos",
+    "icon": "🔵"
+  },
+  {
+    "slug": "carroceria",
+    "name": "Carrocería",
+    "icon": "💡"
+  },
+  {
+    "slug": "accesorios",
+    "name": "Accesorios",
+    "icon": "🧰"
+  }
+]

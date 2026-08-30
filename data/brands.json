@@ -1,0 +1,63 @@
+[
+  {
+    "slug": "geely",
+    "name": "Geely",
+    "models": [
+      {
+        "slug": "ck",
+        "name": "CK"
+      },
+      {
+        "slug": "mk",
+        "name": "MK"
+      },
+      {
+        "slug": "gc6",
+        "name": "GC6"
+      },
+      {
+        "slug": "fc",
+        "name": "FC"
+      },
+      {
+        "slug": "emgrand-718",
+        "name": "Emgrand 718"
+      },
+      {
+        "slug": "coolray",
+        "name": "Coolray"
+      },
+      {
+        "slug": "x3-pro",
+        "name": "X3 Pro"
+      },
+      {
+        "slug": "starray",
+        "name": "Starray"
+      },
+      {
+        "slug": "okavango",
+        "name": "Okavango"
+      },
+      {
+        "slug": "monjaro",
+        "name": "Monjaro"
+      }
+    ]
+  },
+  {
+    "slug": "kia",
+    "name": "Kia",
+    "models": []
+  },
+  {
+    "slug": "hyundai",
+    "name": "Hyundai",
+    "models": []
+  },
+  {
+    "slug": "toyota",
+    "name": "Toyota",
+    "models": []
+  }
+]
